@@ -1,6 +1,4 @@
 'use client'
-import Button from 'react-bootstrap/Button';
-import Spinner from 'react-bootstrap/Spinner';
 import { useEffect, useRef, useState } from "react";
 import Link from 'next/link'
 import { redirect } from 'next/navigation';
