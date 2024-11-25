@@ -27,31 +27,39 @@ export default function carControls() {
             console.log(socket.current);
         })
         
-        socket.current!.on("disconnect", () => {
-            console.log(socket.current!.id); // undefined
+        if (socket.current === null) {
+            return; 
+        }
+
+        socket.current.on("disconnect", () => {
+            console.log(socket.current!.id); 
           });
 
-        socket.current!.on("connect_error", (err) => {
+        socket.current.on("connect_error", (err) => {
             console.log(err.message);
         
           })
     }, [])
 
     const sendKeyPressToRos = async(event: any) => {
+        if (socket.current === null) {
+            return 
+        }
+
         if (event.key === "w"){
-            socket.current!.emit('keypress', {key: event.key, action: "press"}, () => {
+            socket.current.emit('keypress', {key: event.key, action: "press"}, () => {
                 console.log("sent");
             });
        } else if (event.key === "s") {
-            socket.current!.emit('keypress', {key: event.key, action: "press"}, () => {
+            socket.current.emit('keypress', {key: event.key, action: "press"}, () => {
                 console.log("sent");
             });
        } else if (event.key === "a") {
-            socket.current!.emit('keypress', {key: event.key, action: "press"}, () => {
+            socket.current.emit('keypress', {key: event.key, action: "press"}, () => {
                 console.log("sent");
             });
        } else if (event.key === "d"){
-            socket.current!.emit('keypress', {key: event.key, action: "press"}, () => {
+            socket.current.emit('keypress', {key: event.key, action: "press"}, () => {
                 console.log("sent");
             });
        }

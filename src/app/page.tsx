@@ -25,12 +25,12 @@ export default function Home() {
       const req = await fetch("http://10.110.194.54:5000/heartbeat", {
         signal: AbortSignal.timeout(5000)
       }); 
+
       if (!req.ok){
         throw new Error(`Error: ${req.status}`);
       }
 
       const data = await req.json(); 
-
       if (data["is_alive"] !== false) {
         setAlive(true);
       }
@@ -47,6 +47,7 @@ export default function Home() {
       const req = await fetch("http://10.110.194.54:5000/heartbeat", {
         signal: AbortSignal.timeout(5000)
       }); 
+
       if (!req.ok){
         throw new Error(`Error: ${req.status}`);
       }
