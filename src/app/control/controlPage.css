@@ -7,10 +7,17 @@
 .videoFrame {
     max-width: 640px;
     max-height: 480px;
+    position: absolute;
 }
 
 .controls {
     display: flex;
     align-items: bottom;
     justify-self: bottom;
+}
+
+.backgroundColor {
+    width: 640px;
+    height: 480px;
+    background-color: gray;
 }
