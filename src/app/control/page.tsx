@@ -73,7 +73,7 @@ export default function carControls() {
 
     const isStreamLive = async() => {
         try {
-            const req = await fetch("http://127.0.0.1:5000/");
+            const req = await fetch("http://10.110.194.54:5002/camera/stream");
             if (!req.ok) {
                 return;
             }
