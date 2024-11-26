@@ -2,6 +2,7 @@ from flask import Flask, render_template, Response, request, jsonify
 from flask_cors import CORS
 from aiortc import RTCPeerConnection, RTCSessionDescription 
 from datetime import datetime, timedelta
+import ssl
 import threading
 import cv2 
 import json 
@@ -12,6 +13,9 @@ import time
 
 app = Flask(__name__, static_url_path='/static') 
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
+
+context = ssl.SSLContext() 
+context.load_cert_chain('cert.pem','key.pem')
 
 vehicle_status = {"last_heartbeat": None, "is_alive": False}
 HEARTBEAT_TIMEOUT = 5
@@ -61,4 +65,4 @@ if __name__ == '__main__':
     heartbeat_thread = threading.Thread(target=monitor_heartbeat, daemon=True)
     heartbeat_thread.start() 
 
-    app.run(debug=True)
+    app.run(debug=True, ssl_context=context)
