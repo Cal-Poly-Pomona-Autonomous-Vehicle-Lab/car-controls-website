@@ -5,6 +5,12 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
+    ], 
+    "rewrites": [
+      {
+        "source": "/api/**",
+        "destination": "http://<FLASK_SERVER_IP_OR_DOMAIN>:<PORT>/api/**"
+      }
     ]
   }
 }
