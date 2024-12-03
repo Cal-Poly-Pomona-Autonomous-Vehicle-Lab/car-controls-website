@@ -22,7 +22,7 @@ export default function Home() {
 
   const initalChecks = async() => {
     try {
-      const req = await fetch("https://cors-anywhere.herokuapp.com/http://10.110.194.54:5000/heartbeat", {
+      const req = await fetch("http://10.110.194.54:5000/heartbeat", {
         signal: AbortSignal.timeout(5000)
       }); 
 
@@ -44,7 +44,7 @@ export default function Home() {
   const checkCarHeartBeat = async () => {
     setLoading(true);
     try {
-      const req = await fetch("https://cors-anywhere.herokuapp.com/http://10.110.194.54:5000/heartbeat", {
+      const req = await fetch("http://10.110.194.54:5000/heartbeat", {
         signal: AbortSignal.timeout(5000)
       }); 
 
