@@ -96,6 +96,7 @@ export default function carControls() {
 
     return (
         <>
+        <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />
             <div className="allStreamControls" onKeyDown={sendKeyPressToRos} tabIndex={0}> 
                 <div className="videoStream" tabIndex={0}> 
                     <div className="backgroundColor" /> 
