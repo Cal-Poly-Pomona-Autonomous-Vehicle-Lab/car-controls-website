@@ -5,12 +5,6 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
-    ], 
-    "rewrites": [
-      {
-        "source": "https://car-controls-cpp.web.app/",
-        "destination": "http://10.110.194.54:5000/heartbeat"
-      }
     ]
   }
 }
