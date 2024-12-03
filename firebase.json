@@ -8,8 +8,8 @@
     ], 
     "rewrites": [
       {
-        "source": "/api/**",
-        "destination": "http://<FLASK_SERVER_IP_OR_DOMAIN>:<PORT>/api/**"
+        "source": "/",
+        "destination": "http://10.110.194.54:5000/heartbeat"
       }
     ]
   }
