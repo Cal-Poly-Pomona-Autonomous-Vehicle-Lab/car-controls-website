@@ -6,6 +6,7 @@
 #include <string.h> 
 #include <sys/socket.h> 
 #include <sys/types.h> 
+#include <sys/select.h> 
 #include <unistd.h> 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -33,20 +34,20 @@ checksum (char *addr, int len)
   // Sum up 2-byte values until none or only one byte left.
   while (count > 1) {
     sum += *(addr++);
-    count -= 2;
+    count -= 1;
   }
 
   // Add left-over byte, if any.
   if (count > 0) {
-    sum += *(unsigned char*) addr;
+    sum += *(char *) addr;
   }
 
   // Fold 32-bit sum into 16 bits; we lose information by doing this,
   // increasing the chances of a collision.
   // sum = (lower 16 bits) + (upper 16 bits shifted right 16 bits)
-  while (sum >> 16) {
+  while (sum >> 16) { 
     sum = (sum & 0xffff) + (sum >> 16);
-  }
+  } 
 
   // Checksum is one's compliment of sum.
   answer = ~sum;
@@ -80,19 +81,37 @@ bool check_connectivity() {
     icmp->icmp_hun.ih_idseq.icd_seq = 1;
     icmp->icmp_hun.ih_idseq.icd_id = 0;
 
-    icmp->icmp_cksum = checksum(buffer, 64);
+    buffer[8] = 'a'; 
+    buffer[9] = 'b'; 
+    buffer[10] = 'c'; 
+    buffer[11] = 'd';
+    buffer[12] = 'e'; 
+    buffer[13] = 'f'; 
+    buffer[14] = 'g'; 
+    buffer[15] = 'h'; 
+    buffer[16] = 'i'; 
+    buffer[17] = 'j'; 
+    buffer[18] = 'k';
+    buffer[17] = 'l'; 
+    buffer[18] = 'm'; 
+    buffer[19] = 'n'; 
+    buffer[20] = 'o'; 
+    buffer[21] = 'p';  
 
     struct sockaddr_in dest_addr; 
+    int dest_addr_len = sizeof(dest_addr);
     dest_addr.sin_family = AF_INET; 
     inet_aton("8.8.8.8", &dest_addr.sin_addr); 
     dest_addr.sin_port = htons(443);
-    int dest_addr_len = sizeof(dest_addr);
 
     struct sockaddr_in from;
     int from_len = sizeof(from);
 
     printf("Type: %d\n", icmp->icmp_type);
     printf("Code: %d\n\n", icmp->icmp_code);
+    printf("Buffer size: %d\n", sizeof(buffer)); 
+    icmp->icmp_cksum = checksum(buffer, sizeof(buffer));
+    icmp->icmp_cksum = htons(0x1F1F); 
 
     int send_bytes = sendto(sock_fd, buffer, sizeof(buffer), 0, (struct sockaddr *)&dest_addr, (socklen_t)dest_addr_len);
     if (send_bytes < 0){
@@ -134,6 +153,7 @@ void *check_connection_thread(void* thread_id) {
         sleep(5);
     }
 
+    isThreadAlive = false;
     pthread_exit(NULL);
 }
 
@@ -148,11 +168,46 @@ int start_server() {
     return server_fd; 
 }
 
-int main() {
+bool wait_for_update(int fd, struct fd_set *rfds, struct timeval *tv) {
 
-    pthread_t thread_id;
+    FD_ZERO(rfds);
+    FD_SET(fd, rfds);
+
+    int waiting = 0; 
+    while (waiting > 0) {
+
+        waiting = select(fd, rfds, NULL, NULL, tv);
+        
+        /* Handle when server connection is severed or error occurs*/
+        if (!isThreadAlive)
+            return false;
+        else if (waiting == -1) 
+            return false; 
+    }
+
+    return true;
+}
+
+int main() {
+    /* Server init */
+    char buffer[BUFF_SIZE];
+    char resp[] = "HTTP/1.0 200 OK\r\n"
+                  "Server: heartbeat-M\r\n"
+                  "Content-type: application/json\r\n\r\n"
+                      "{\"is_alive\": true}\r\n";
+
     bool isActive = false; 
     int server_fd;
+
+    /* Select init */
+    struct timeeval; 
+    fd_set rfds; 
+
+    /* Thread init */
+    pthread_t thread_id;
+
+    tv.tv_sec = 1; 
+    tv.tv_usec = 0;
 
     while (true) {
         
@@ -160,12 +215,6 @@ int main() {
             isActive = check_connectivity(); 
             sleep(5);
         }
-
-        char buffer[BUFF_SIZE];
-        char resp[] = "HTTP/1.0 200 OK\r\n"
-                      "Server: heartbeat-M\r\n"
-                      "Content-type: application/json\r\n\r\n"
-                      "{\"is_alive\": true}\r\n";
 
         int server_fd = start_server(); 
 
@@ -207,13 +256,21 @@ int main() {
     
         isThreadAlive = true;
 
+        fd_set rfds; 
+
         for (;;) {
+
+            /* Waiting for the server to get a read or check if disconnection occurs */
+            bool server_alive = wait_for_update(server_fd, &rfds, &tv);
+            if (server_alive == false) {
+                isActive = false;
+                printf("Server disconnected or issue with select()");
+                break;
+            }
+            printf("Active");
+
             int active_sock_fd = accept(server_fd, 
                 (struct sockaddr *)&server_addr, (socklen_t *)&server_addrlen);
-
-            printf("Checking thread: %d\n", isThreadAlive);
-            if (isThreadAlive == false) 
-                break; 
 
             if (active_sock_fd < 0) {
                 perror("Webserver (accept)");
@@ -252,7 +309,7 @@ int main() {
             close(active_sock_fd);
         }
 
-        printf("Break\n"); 
+        isActive = false;
         close(server_fd);
         pthread_cancel(thread_id);
     }
@@ -262,3 +319,4 @@ int main() {
 
     return 0; 
 }
+
