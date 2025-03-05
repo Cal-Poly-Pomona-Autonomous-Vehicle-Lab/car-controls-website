@@ -6,6 +6,7 @@
 #include <string.h> 
 #include <sys/socket.h> 
 #include <sys/types.h> 
+#include <sys/time.h>
 #include <sys/select.h> 
 #include <unistd.h> 
 #include <arpa/inet.h>
@@ -16,6 +17,7 @@
 #include <netinet/ip_icmp.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <time.h>
 
 
 #define PORT 8000
@@ -25,7 +27,7 @@ bool isThreadAlive = false;
 
 /* Computing the checksum https://www.cs.dartmouth.edu/~sergey/cs60/lab3/icmp4-rawsend.c */
 uint16_t
-checksum (char *addr, int len)
+checksum_ck (char *addr, int len)
 {
   int count = len;
   register uint32_t sum = 0;
@@ -33,20 +35,18 @@ checksum (char *addr, int len)
 
   // Sum up 2-byte values until none or only one byte left.
   while (count > 1) {
-    sum += *(addr++);
-    count -= 1;
+    sum += (addr[0] << 8) | (addr[1] & 0xFF);
+    addr += 2;
+    count -= 2;
   }
 
-  // Add left-over byte, if any.
-  if (count > 0) {
-    sum += *(char *) addr;
-  }
-
+  if (count > 0)
+    sum += (addr[0] & 0xFF) << 8;
   // Fold 32-bit sum into 16 bits; we lose information by doing this,
   // increasing the chances of a collision.
   // sum = (lower 16 bits) + (upper 16 bits shifted right 16 bits)
   while (sum >> 16) { 
-    sum = (sum & 0xffff) + (sum >> 16);
+    sum = (sum & 0xFFFF) + (sum >> 16);
   } 
 
   // Checksum is one's compliment of sum.
@@ -56,8 +56,8 @@ checksum (char *addr, int len)
 }
 
 bool check_connectivity() {
-    char buffer[64]; 
-    memset(&buffer, 0, 64); 
+    char buffer[48]; 
+    memset(&buffer, 0, 48); 
 
     struct timeval timeout; 
     timeout.tv_sec = 5; 
@@ -78,28 +78,36 @@ bool check_connectivity() {
     struct icmp *icmp = (struct icmp*)buffer; 
     icmp->icmp_type = ICMP_ECHO; 
     icmp->icmp_code = 0; 
+    icmp->icmp_cksum = 0;
     icmp->icmp_hun.ih_idseq.icd_seq = 1;
     icmp->icmp_hun.ih_idseq.icd_id = 0;
 
-    buffer[8] = 'a'; 
-    buffer[9] = 'b'; 
-    buffer[10] = 'c'; 
-    buffer[11] = 'd';
-    buffer[12] = 'e'; 
-    buffer[13] = 'f'; 
-    buffer[14] = 'g'; 
-    buffer[15] = 'h'; 
-    buffer[16] = 'i'; 
-    buffer[17] = 'j'; 
-    buffer[18] = 'k';
-    buffer[17] = 'l'; 
-    buffer[18] = 'm'; 
-    buffer[19] = 'n'; 
-    buffer[20] = 'o'; 
-    buffer[21] = 'p';  
+    // Buffer[8] = 'a'; 
+    // Buffer[9] = 'b'; 
+    // Buffer[10] = 'c'; 
+    // Buffer[11] = 'd';
+    // Buffer[12] = 'e'; 
+    // Buffer[13] = 'f'; 
+    // Buffer[14] = 'g'; 
+    // Buffer[15] = 'h'; 
+    // Buffer[16] = 'i'; 
+    // Buffer[17] = 'j'; 
+    // Buffer[18] = 'k';
+    // Buffer[17] = 'l'; 
+    // Buffer[18] = 'm'; 
+    // Buffer[19] = 'n'; 
+    // Buffer[20] = 'o'; 
+    buffer[32] = 'p'; 
+
+    time_t ts; 
+    time(&ts);
+    gmtime(&ts);
+    icmp->icmp_dun.id_ts.its_otime = ts;
+    icmp->icmp_cksum = htons(checksum_ck(buffer, sizeof(buffer)));
 
     struct sockaddr_in dest_addr; 
     int dest_addr_len = sizeof(dest_addr);
+
     dest_addr.sin_family = AF_INET; 
     inet_aton("8.8.8.8", &dest_addr.sin_addr); 
     dest_addr.sin_port = htons(443);
@@ -108,10 +116,9 @@ bool check_connectivity() {
     int from_len = sizeof(from);
 
     printf("Type: %d\n", icmp->icmp_type);
-    printf("Code: %d\n\n", icmp->icmp_code);
-    printf("Buffer size: %d\n", sizeof(buffer)); 
-    icmp->icmp_cksum = checksum(buffer, sizeof(buffer));
-    icmp->icmp_cksum = htons(0x1F1F); 
+    printf("Code: %d\n\n", icmp->icmp_code); 
+
+    // icmp->icmp_cksum = htons(0x1F1F); 
 
     int send_bytes = sendto(sock_fd, buffer, sizeof(buffer), 0, (struct sockaddr *)&dest_addr, (socklen_t)dest_addr_len);
     if (send_bytes < 0){
@@ -205,6 +212,7 @@ int main() {
 
     /* Thread init */
     pthread_t thread_id;
+    struct timeval tv;
 
     tv.tv_sec = 1; 
     tv.tv_usec = 0;
