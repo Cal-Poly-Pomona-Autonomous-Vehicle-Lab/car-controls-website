@@ -238,12 +238,12 @@ int main() {
 
         if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) != 0) {
             perror("Webserver (bind)");
-            return 1;
+            continue;
         }
 
         if (listen(server_fd, SOMAXCONN) != 0) {
             perror("Webserver (listen)");
-            return 1; 
+            continue; 
         }
 
         /* Print out the IP address and Port */
@@ -259,7 +259,7 @@ int main() {
 
         if (pthread_create(&thread_id, NULL, check_connection_thread, NULL) != 0) {
             perror("pthread_create() error");
-            exit(1);
+            continue; 
         }
     
         isThreadAlive = true;
