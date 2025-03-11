@@ -172,6 +172,12 @@ int start_server() {
         exit(EXIT_FAILURE);
     }
 
+    int opt = 1; 
+    if ((setsockopt(server_fd, SOL_SOCKET, SO_RESUSEADDR, &opt, sizeof(opt))) < 0) {
+        perror("Set Socket options failed: "); 
+        return -1; 
+    }
+
     return server_fd; 
 }
 
@@ -225,6 +231,11 @@ int main() {
         }
 
         int server_fd = start_server(); 
+        if (server_fd <= -1) {
+            perror("Server failure: ");
+            continue; 
+        } 
+
 
         struct sockaddr_in server_addr; 
         int server_addrlen = sizeof(server_addr);
