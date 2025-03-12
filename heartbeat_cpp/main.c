@@ -20,7 +20,7 @@
 #include <time.h>
 
 
-#define PORT 8000
+#define PORT 8005 
 #define BUFF_SIZE 2024 
 
 bool isThreadAlive = false;
@@ -80,7 +80,7 @@ bool check_connectivity() {
     icmp->icmp_code = 0; 
     icmp->icmp_cksum = 0;
     icmp->icmp_hun.ih_idseq.icd_seq = 1;
-    icmp->icmp_hun.ih_idseq.icd_id = 0;
+    icmp->icmp_hun.ih_idseq.icd_id = getpid();
 
     // Buffer[8] = 'a'; 
     // Buffer[9] = 'b'; 
@@ -254,7 +254,7 @@ int main() {
         int server_addrlen = sizeof(server_addr);
 
         server_addr.sin_family = AF_INET; 
-        inet_aton("192.168.64.13", &server_addr.sin_addr); 
+        inet_aton("10.110.197.166", &server_addr.sin_addr); 
         server_addr.sin_port = htons(PORT); 
 
         struct sockaddr_in client_addr; 
