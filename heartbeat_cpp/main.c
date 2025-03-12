@@ -84,7 +84,6 @@ bool check_connectivity() {
 
     // Buffer[8] = 'a'; 
     // Buffer[9] = 'b'; 
-    // Buffer[10] = 'c'; 
     // Buffer[11] = 'd';
     // Buffer[12] = 'e'; 
     // Buffer[13] = 'f'; 
@@ -103,6 +102,7 @@ bool check_connectivity() {
     time(&ts);
     gmtime(&ts);
     icmp->icmp_dun.id_ts.its_otime = ts;
+
     icmp->icmp_cksum = htons(checksum_ck(buffer, sizeof(buffer)));
 
     struct sockaddr_in dest_addr; 
@@ -123,6 +123,7 @@ bool check_connectivity() {
     int send_bytes = sendto(sock_fd, buffer, sizeof(buffer), 0, (struct sockaddr *)&dest_addr, (socklen_t)dest_addr_len);
     if (send_bytes < 0){
         perror("Failed to send icmp packet"); 
+        close(sock_fd);
         return false;
     }
 
@@ -131,6 +132,7 @@ bool check_connectivity() {
     int bytes = recvfrom(sock_fd, buffer, sizeof(buffer), 0, (struct sockaddr *)&from, (socklen_t *)&from_len);
     if (bytes < 0) {
         perror("Failed to recieved icmp packet");
+        close(sock_fd);
         return false; 
     }
 
@@ -140,14 +142,22 @@ bool check_connectivity() {
     printf("Code: %u\n", icmp_reply->icmp_code);
     fflush(stdout);
 
-    close(sock_fd);
     switch (icmp_reply->icmp_type) {
         case ICMP_ECHOREPLY:
+            close(sock_fd);
             return true;
         case ICMP_UNREACH_ISOLATED:
+            close(sock_fd);
             return false;
+        case ICMP_DEST_UNREACH:
+            close(sock_fd); 
+            return false; 
+        default: 
+            close(sock_fd); 
+            return false; 
     }
 
+    close(sock_fd); 
     return false;
 }
 
@@ -155,13 +165,12 @@ bool check_connectivity() {
 void *check_connection_thread(void* thread_id) {
     bool isConnected = true;
     while (isConnected) {
-        printf("Thread\n");
         isConnected = check_connectivity(); 
         sleep(5);
     }
 
     isThreadAlive = false;
-    pthread_exit(NULL);
+    return NULL; 
 }
 
 int start_server() {
@@ -173,7 +182,7 @@ int start_server() {
     }
 
     int opt = 1; 
-    if ((setsockopt(server_fd, SOL_SOCKET, SO_RESUSEADDR, &opt, sizeof(opt))) < 0) {
+    if ((setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) < 0) {
         perror("Set Socket options failed: "); 
         return -1; 
     }
@@ -181,21 +190,24 @@ int start_server() {
     return server_fd; 
 }
 
-bool wait_for_update(int fd, struct fd_set *rfds, struct timeval *tv) {
+bool wait_for_update(int fd, fd_set *rfds, struct timeval *tv) {
 
     FD_ZERO(rfds);
     FD_SET(fd, rfds);
 
     int waiting = 0; 
-    while (waiting > 0) {
+    while (waiting == 0) {
 
-        waiting = select(fd, rfds, NULL, NULL, tv);
+        waiting = select(fd + 1, rfds, NULL, NULL, tv);
         
         /* Handle when server connection is severed or error occurs*/
         if (!isThreadAlive)
             return false;
         else if (waiting == -1) 
             return false; 
+
+        FD_ZERO(rfds);
+        FD_SET(fd, rfds);
     }
 
     return true;
@@ -214,25 +226,26 @@ int main() {
 
     /* Select init */
     struct timeeval; 
-    fd_set rfds; 
 
     /* Thread init */
     pthread_t thread_id;
     struct timeval tv;
 
-    tv.tv_sec = 1; 
+    tv.tv_sec = 3; 
     tv.tv_usec = 0;
 
     while (true) {
-        
+        memset(&buffer, 0, BUFF_SIZE); 
+
         while (!isActive) {
             isActive = check_connectivity(); 
             sleep(5);
         }
 
-        int server_fd = start_server(); 
+        server_fd = start_server(); 
         if (server_fd <= -1) {
             perror("Server failure: ");
+            close(server_fd); 
             continue; 
         } 
 
@@ -241,7 +254,7 @@ int main() {
         int server_addrlen = sizeof(server_addr);
 
         server_addr.sin_family = AF_INET; 
-        server_addr.sin_addr.s_addr = INADDR_ANY; 
+        inet_aton("192.168.64.13", &server_addr.sin_addr); 
         server_addr.sin_port = htons(PORT); 
 
         struct sockaddr_in client_addr; 
@@ -249,11 +262,13 @@ int main() {
 
         if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) != 0) {
             perror("Webserver (bind)");
+            close(server_fd); 
             continue;
         }
 
         if (listen(server_fd, SOMAXCONN) != 0) {
             perror("Webserver (listen)");
+            close(server_fd); 
             continue; 
         }
 
@@ -270,30 +285,29 @@ int main() {
 
         if (pthread_create(&thread_id, NULL, check_connection_thread, NULL) != 0) {
             perror("pthread_create() error");
-            continue; 
+            break; 
         }
     
         isThreadAlive = true;
-
         fd_set rfds; 
 
         for (;;) {
 
             /* Waiting for the server to get a read or check if disconnection occurs */
             bool server_alive = wait_for_update(server_fd, &rfds, &tv);
+            printf("Server: %d\n", server_alive); 
             if (server_alive == false) {
                 isActive = false;
                 printf("Server disconnected or issue with select()");
                 break;
             }
-            printf("Active");
 
             int active_sock_fd = accept(server_fd, 
                 (struct sockaddr *)&server_addr, (socklen_t *)&server_addrlen);
 
             if (active_sock_fd < 0) {
                 perror("Webserver (accept)");
-                continue;
+                break;
             }
 
             printf("Connection Accepted\n");
@@ -329,13 +343,14 @@ int main() {
         }
 
         isActive = false;
-        close(server_fd);
-        pthread_cancel(thread_id);
+        if (close(server_fd) == -1) 
+            perror("Failed to close: "); 
+        if (pthread_join(thread_id, NULL) != 0) 
+            perror("Failed to close pthread: ");
     }
 
-    close(server_fd);
-    pthread_cancel(thread_id);
-
+    close(server_fd); 
+    pthread_join(thread_id, NULL); 
     return 0; 
 }
 
