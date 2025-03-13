@@ -11,8 +11,8 @@
 #include <unistd.h> 
 #include <arpa/inet.h>
 #include <errno.h>
+#include <ifaddrs.h> 
 
-#include <netdb.h> 
 #include <netinet/in.h> 
 #include <netinet/ip_icmp.h>
 #include <unistd.h>
@@ -82,20 +82,6 @@ bool check_connectivity() {
     icmp->icmp_hun.ih_idseq.icd_seq = 1;
     icmp->icmp_hun.ih_idseq.icd_id = getpid();
 
-    // Buffer[8] = 'a'; 
-    // Buffer[9] = 'b'; 
-    // Buffer[11] = 'd';
-    // Buffer[12] = 'e'; 
-    // Buffer[13] = 'f'; 
-    // Buffer[14] = 'g'; 
-    // Buffer[15] = 'h'; 
-    // Buffer[16] = 'i'; 
-    // Buffer[17] = 'j'; 
-    // Buffer[18] = 'k';
-    // Buffer[17] = 'l'; 
-    // Buffer[18] = 'm'; 
-    // Buffer[19] = 'n'; 
-    // Buffer[20] = 'o'; 
     buffer[32] = 'p'; 
 
     time_t ts; 
@@ -117,8 +103,6 @@ bool check_connectivity() {
 
     printf("Type: %d\n", icmp->icmp_type);
     printf("Code: %d\n\n", icmp->icmp_code); 
-
-    // icmp->icmp_cksum = htons(0x1F1F); 
 
     int send_bytes = sendto(sock_fd, buffer, sizeof(buffer), 0, (struct sockaddr *)&dest_addr, (socklen_t)dest_addr_len);
     if (send_bytes < 0){
@@ -213,9 +197,46 @@ bool wait_for_update(int fd, fd_set *rfds, struct timeval *tv) {
     return true;
 }
 
+void get_interface(char *interface_address) {
+    struct ifaddrs *ifaddr; 
+    int family;
+
+    if (getifaddrs(&ifaddr) == -1) {
+        perror("getifaddrs"); 
+    } 
+
+    for (struct ifaddrs *ifa = ifaddr; ifa != NULL; 
+        ifa = ifa->ifa_next) {
+        
+        if (ifa->ifa_addr == NULL)
+            continue; 
+        
+        family = ifa->ifa_addr->sa_family; 
+
+
+        printf("%-8s %s (%d)\n", 
+            ifa->ifa_name, 
+            (family == AF_PACKET) ? "AF_PACKET": 
+            (family == AF_INET) ? "AF_INET": 
+            (family == AF_INET6) ? "AF_INET6" : "???",
+            family); 
+
+
+        if (family == AF_INET || family == AF_INET6) {
+           if (strcmp(ifa->ifa_name, "enp0s1")) {  
+           int s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), 
+            interface_address, NI_MAXHOST, NULL, 0, NI_NUMERICHOST); 
+           }  
+        } 
+    } 
+
+    freeifaddrs(ifaddr); 
+} 
+
 int main() {
     /* Server init */
-    char buffer[BUFF_SIZE];
+    char interface_address[NI_MAXHOST];  
+    char buffer[BUFF_SIZE]; 
     char resp[] = "HTTP/1.0 200 OK\r\n"
                   "Server: heartbeat-M\r\n"
                   "Content-type: application/json\r\n\r\n"
@@ -254,7 +275,7 @@ int main() {
         int server_addrlen = sizeof(server_addr);
 
         server_addr.sin_family = AF_INET; 
-        inet_aton("10.110.197.166", &server_addr.sin_addr); 
+        inet_aton(interface_address, &server_addr.sin_addr); 
         server_addr.sin_port = htons(PORT); 
 
         struct sockaddr_in client_addr; 
