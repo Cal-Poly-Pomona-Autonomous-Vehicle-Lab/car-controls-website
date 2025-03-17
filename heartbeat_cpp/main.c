@@ -212,22 +212,15 @@ void get_interface(char *interface_address) {
             continue; 
         
         family = ifa->ifa_addr->sa_family; 
+        
+        if (family != AF_INET && family != AF_INET6) 
+            continue; 
 
-
-        printf("%-8s %s (%d)\n", 
-            ifa->ifa_name, 
-            (family == AF_PACKET) ? "AF_PACKET": 
-            (family == AF_INET) ? "AF_INET": 
-            (family == AF_INET6) ? "AF_INET6" : "???",
-            family); 
-
-
-        if (family == AF_INET || family == AF_INET6) {
-           if (strcmp(ifa->ifa_name, "enp0s1")) {  
-           int s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), 
+        if (strcmp(ifa->ifa_name, "enp0s1")) {  
+            int s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), 
             interface_address, NI_MAXHOST, NULL, 0, NI_NUMERICHOST); 
-           }  
-        } 
+            break; 
+        }  
     } 
 
     freeifaddrs(ifaddr); 
@@ -258,11 +251,13 @@ int main() {
     while (true) {
         memset(&buffer, 0, BUFF_SIZE); 
 
+        /* Determine whether connection is active */ 
         while (!isActive) {
             isActive = check_connectivity(); 
             sleep(5);
         }
 
+        /* Obtain File Descriptor and start socket */
         server_fd = start_server(); 
         if (server_fd <= -1) {
             perror("Server failure: ");
@@ -271,6 +266,7 @@ int main() {
         } 
 
 
+        /* Setup server socket family, address, and port */
         struct sockaddr_in server_addr; 
         int server_addrlen = sizeof(server_addr);
 
@@ -281,12 +277,14 @@ int main() {
         struct sockaddr_in client_addr; 
         int client_addrlen = sizeof(client_addr);
 
+        /* Bind the file descriptor to the server struct */ 
         if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) != 0) {
             perror("Webserver (bind)");
             close(server_fd); 
             continue;
         }
 
+        /* Listen for any requests */ 
         if (listen(server_fd, SOMAXCONN) != 0) {
             perror("Webserver (listen)");
             close(server_fd); 
@@ -304,6 +302,8 @@ int main() {
             fflush(stdout);
         }
 
+        /* Create thread to constantly ping 8.8.8.8 to determine whether
+            connection is alive */ 
         if (pthread_create(&thread_id, NULL, check_connection_thread, NULL) != 0) {
             perror("pthread_create() error");
             break; 
