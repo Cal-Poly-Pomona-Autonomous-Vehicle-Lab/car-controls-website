@@ -1,7 +1,0 @@
-/home/snow/car-controls-website/MQTT/build/CMakeFiles/mqtt_pub.dir
-/home/snow/car-controls-website/MQTT/build/CMakeFiles/edit_cache.dir
-/home/snow/car-controls-website/MQTT/build/CMakeFiles/rebuild_cache.dir
-/home/snow/car-controls-website/MQTT/build/CMakeFiles/list_install_components.dir
-/home/snow/car-controls-website/MQTT/build/CMakeFiles/install.dir
-/home/snow/car-controls-website/MQTT/build/CMakeFiles/install/local.dir
-/home/snow/car-controls-website/MQTT/build/CMakeFiles/install/strip.dir

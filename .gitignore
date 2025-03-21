@@ -38,7 +38,7 @@ yarn-error.log*
 .vercel
 
 # C build 
-MQTT/build/*
+MQTT/publisher/build/*
 
 # typescript
 *.tsbuildinfo
