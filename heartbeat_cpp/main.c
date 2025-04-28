@@ -297,8 +297,8 @@ int main() {
                 server_addr.sin_addr.s_addr, PORT);
             fflush(stdout);
         } else {
-            printf("Server started at: http://%u:%d/\n", 
-                server_addr.sin_addr.s_addr, PORT);
+            printf("Server started at: http://%s:%d/\n", 
+                inet_ntoa(server_addr.sin_addr), PORT);
             fflush(stdout);
         }
 

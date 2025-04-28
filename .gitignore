@@ -40,3 +40,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# VSCode config folder
+.vscode
+
+#output file for heartbeat (you should compile this on your own machine)
+heartbeat_cpp/output
