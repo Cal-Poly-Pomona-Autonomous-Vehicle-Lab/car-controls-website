@@ -25,6 +25,8 @@
 
 bool isThreadAlive = false;
 
+
+
 /* Computing the checksum https://www.cs.dartmouth.edu/~sergey/cs60/lab3/icmp4-rawsend.c */
 uint16_t
 checksum_ck (char *addr, int len)
@@ -197,9 +199,25 @@ bool wait_for_update(int fd, fd_set *rfds, struct timeval *tv) {
     return true;
 }
 
+// Prioritize Ethernet over Wi-Fi
+int interface_priority(const char *name) {
+    if (strncmp(name, "eth", 3) == 0) return 1;
+    if (strncmp(name, "en", 2) == 0) return 2;  // macOS Ethernet
+    if (strncmp(name, "wlan", 4) == 0) return 3;
+    if (strncmp(name, "wl", 2) == 0) return 4;  // Other Wi-Fi
+    return 5;
+}
+
 void get_interface(char *interface_address) {
     struct ifaddrs *ifaddr; 
     int family;
+    // temp ip during iteration
+    char ip[INET_ADDRSTRLEN] = {0};
+    // current best ip found (based on priority)
+    char best_ip[INET_ADDRSTRLEN] = {0};
+
+    // Keeps track of the best (lowest) interface priority found so far. Starts high.
+    int best_priority = 100;
 
     if (getifaddrs(&ifaddr) == -1) {
         perror("getifaddrs"); 
@@ -220,7 +238,25 @@ void get_interface(char *interface_address) {
             int s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), 
             interface_address, NI_MAXHOST, NULL, 0, NI_NUMERICHOST); 
             break; 
-        }  
+        }
+
+        // extract ip address from socket structure
+        void *addr = &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
+
+        // convert ip to human-readable string
+        inet_ntop(family, addr, ip, sizeof(ip));
+  
+        // Gets priority value based on interface name (e.g., eth0, wlan0)
+        int prio = interface_priority(ifa->ifa_name);
+
+        /* If this interface has higher priority (lower number), 
+         save its IP as the best one found so far.
+        */
+        if (prio < best_priority) {
+        best_priority = prio;
+        strncpy(best_ip, ip, sizeof(best_ip));
+        }
+
     } 
 
     freeifaddrs(ifaddr); 
