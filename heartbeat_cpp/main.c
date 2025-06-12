@@ -201,11 +201,12 @@ bool wait_for_update(int fd, fd_set *rfds, struct timeval *tv) {
 
 // Prioritize Ethernet over Wi-Fi
 int interface_priority(const char *name) {
+    
     if (strncmp(name, "eth", 3) == 0) return 1;
-    if (strncmp(name, "en", 2) == 0) return 2;  // macOS Ethernet
-    if (strncmp(name, "wlan", 4) == 0) return 3;
-    if (strncmp(name, "wl", 2) == 0) return 4;  // Other Wi-Fi
-    return 5;
+    else if (strncmp(name, "en", 2) == 0) return 2;  // macOS Ethernet
+    else if (strncmp(name, "wlan", 4) == 0) return 3;
+    else if (strncmp(name, "wl", 2) == 0) return 4;  // Other Wi-Fi
+    return -1;
 }
 
 void get_interface(char *interface_address) {
@@ -252,11 +253,12 @@ void get_interface(char *interface_address) {
         /* If this interface has higher priority (lower number), 
          save its IP as the best one found so far.
         */
-        if (prio < best_priority) {
-        best_priority = prio;
-        strncpy(best_ip, ip, sizeof(best_ip));
-        }
+        if (prio > -1) { 
+            perror("Failed to get an ip address"); 
+            return; 
+        } 
 
+        strncpy(best_ip, ip, sizeof(best_ip));
     } 
 
     freeifaddrs(ifaddr); 
