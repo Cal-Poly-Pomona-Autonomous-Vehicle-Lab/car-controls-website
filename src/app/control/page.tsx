@@ -9,7 +9,7 @@ import { read } from "fs";
 import "./controlPage.css";
 
 export default function carControls() {
-    const ip_address_v4 = process.env.IPV4; 
+    const ip_address_v4 = process.env.NEXT_PUBLIC_IPV4; 
 
     let socket = useRef<Socket | null> (null); 
     const [isData, setData] = useState(null);

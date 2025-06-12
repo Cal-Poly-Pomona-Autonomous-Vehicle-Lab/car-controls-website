@@ -10,7 +10,9 @@ import "./connectPage.css";
 
 
 export default function Home() {
-  const ip_address_v4 = process.env.IPV4; 
+  const ip_address_v4 = process.env.NEXT_PUBLIC_IPV4;
+  if (!ip_address_v4) throw new Error("Failed to get env");
+
   const router = useRouter()
 
   const [isAlive, setAlive] = useState(false);
