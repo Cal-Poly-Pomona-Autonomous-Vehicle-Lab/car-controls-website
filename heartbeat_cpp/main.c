@@ -223,6 +223,8 @@ void get_interface(char *interface_address) {
         perror("getifaddrs"); 
     } 
 
+    void *addr; 
+
     for (struct ifaddrs *ifa = ifaddr; ifa != NULL; 
         ifa = ifa->ifa_next) {
         
@@ -234,14 +236,8 @@ void get_interface(char *interface_address) {
         if (family != AF_INET && family != AF_INET6) 
             continue; 
 
-        if (strcmp(ifa->ifa_name, "enp0s1")) {  
-            int s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), 
-            interface_address, NI_MAXHOST, NULL, 0, NI_NUMERICHOST); 
-            break; 
-        }
-
         // extract ip address from socket structure
-        void *addr = &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
+        addr = &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
 
         // convert ip to human-readable string
         inet_ntop(family, addr, ip, sizeof(ip));
@@ -255,6 +251,9 @@ void get_interface(char *interface_address) {
          if (prio < best_priority) {
              best_priority = prio;
              strncpy(best_ip, ip, sizeof(best_ip));
+             strncpy(interface_address, addr, sizeof(addr)); 
+             int s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), 
+             interface_address, NI_MAXHOST, NULL, 0, NI_NUMERICHOST); 
         }
     } 
 
@@ -299,7 +298,6 @@ int main() {
             close(server_fd); 
             continue; 
         } 
-
 
         /* Setup server socket family, address, and port */
         struct sockaddr_in server_addr; 
