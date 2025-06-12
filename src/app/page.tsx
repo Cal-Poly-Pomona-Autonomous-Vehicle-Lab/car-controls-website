@@ -10,6 +10,7 @@ import "./connectPage.css";
 
 
 export default function Home() {
+  const ip_address_v4 = process.env.IPV4; 
   const router = useRouter()
 
   const [isAlive, setAlive] = useState(false);
@@ -22,7 +23,7 @@ export default function Home() {
 
   const initalChecks = async() => {
     try {
-      const req = await fetch("http://10.110.194.54:5000/heartbeat", {
+      const req = await fetch(`http://${ip_address_v4}/heartbeat`, {
         signal: AbortSignal.timeout(5000)
       }); 
 
@@ -44,7 +45,7 @@ export default function Home() {
   const checkCarHeartBeat = async () => {
     setLoading(true);
     try {
-      const req = await fetch("http://10.110.194.54:5000/heartbeat", {
+      const req = await fetch(`http://${ip_address_v4}/heartbeat`, {
         signal: AbortSignal.timeout(5000)
       }); 
 

@@ -4,14 +4,15 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation';
 import { ChevronCompactDown, ChevronCompactLeft, ChevronCompactRight, ChevronBarUp } from 'react-bootstrap-icons';
 import {io, Socket} from 'socket.io-client';
-import "./controlPage.css";
 import { useFormState } from 'react-dom';
 import { read } from "fs";
+import "./controlPage.css";
 
 export default function carControls() {
+    const ip_address_v4 = process.env.IPV4; 
+
     let socket = useRef<Socket | null> (null); 
     const [isData, setData] = useState(null);
-
 
     const [isLeft, setLeft] = useState(false);
     const [isRight, setRight] = useState(false);
@@ -19,7 +20,7 @@ export default function carControls() {
     const [isBackward, setBackward] = useState(false);
     const [isStream, setStream] = useState(false);
 
-    socket.current = io("http://10.110.194.54:5002", {
+    socket.current = io(`http://${ip_address_v4}`, {
         timeout: 5000, 
         transports: ["websocket"], 
     });
@@ -73,7 +74,7 @@ export default function carControls() {
 
     const isStreamLive = async() => {
         try {
-            const req = await fetch("http://10.110.194.54:5002/camera/stream");
+            const req = await fetch(`http://${ip_address_v4}/camera/stream`);
             if (!req.ok) {
                 return;
             }
@@ -99,7 +100,7 @@ export default function carControls() {
             <div className="allStreamControls" onKeyDown={sendKeyPressToRos} tabIndex={0}> 
                 <div className="videoStream" tabIndex={0}> 
                     <div className="backgroundColor" /> 
-                    <img className="videoFrame" src={isStream ? "http://10.110.194.54:5002/camera/stream": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII="} /> 
+                    <img className="videoFrame" src={isStream ? `http://${ip_address_v4}/camera/stream`: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII="} /> 
                 </div>
                 <div className="controls" tabIndex={0}>
                     <ChevronCompactDown size={20}></ChevronCompactDown>
