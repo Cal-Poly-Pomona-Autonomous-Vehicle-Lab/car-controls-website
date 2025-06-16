@@ -149,7 +149,7 @@ void *check_connection_thread(void* thread_id) {
     icmp->icmp_cksum = 0;
     icmp->icmp_hun.ih_idseq.icd_seq = 1;
     while (isConnected) {
-        isConnected = check_connectivity(icmp); 
+        isConnected = check_connectivity(icmp, buffer); 
         sleep(5);
     }
 
