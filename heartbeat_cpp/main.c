@@ -55,9 +55,7 @@ checksum_ck (char *addr, int len)
   return (answer);
 }
 
-bool check_connectivity(struct icmp *icmp) {
-    char buffer[48]; 
-    memset(&buffer, 0, 48); 
+bool check_connectivity(struct icmp *icmp, char buffer) {
 
     struct timeval timeout; 
     timeout.tv_sec = 5; 
@@ -141,9 +139,17 @@ bool check_connectivity(struct icmp *icmp) {
 
 
 void *check_connection_thread(void* thread_id) {
+    char buffer[48]; 
+    memset(&buffer, 0, 48); 
+    /* https://github.com/leostratus/netinet/blob/master/ip_icmp.h */
+    struct icmp *icmp = (struct icmp*)buffer;
     bool isConnected = true;
+    icmp->icmp_type = ICMP_ECHO; 
+    icmp->icmp_code = 0; 
+    icmp->icmp_cksum = 0;
+    icmp->icmp_hun.ih_idseq.icd_seq = 1;
     while (isConnected) {
-        isConnected = check_connectivity(); 
+        isConnected = check_connectivity(icmp); 
         sleep(5);
     }
 
@@ -242,6 +248,8 @@ int main() {
     tv.tv_sec = 3; 
     tv.tv_usec = 0;
 
+    char buffer[48]; 
+    memset(&buffer, 0, 48); 
     /* https://github.com/leostratus/netinet/blob/master/ip_icmp.h */
     struct icmp *icmp = (struct icmp*)buffer;
     icmp->icmp_type = ICMP_ECHO; 
@@ -254,7 +262,7 @@ int main() {
 
         /* Determine whether connection is active */
         while (!isActive) {
-            isActive = check_connectivity(icmp); 
+            isActive = check_connectivity(icmp, buffer); 
             sleep(5);
         }
 
