@@ -23,7 +23,7 @@
 #define PORT 8005 
 #define BUFF_SIZE 2024 
 
-bool isThreadAlive = false;
+extern bool isThreadAlive = false;
 
 /* Computing the checksum https://www.cs.dartmouth.edu/~sergey/cs60/lab3/icmp4-rawsend.c */
 uint16_t
