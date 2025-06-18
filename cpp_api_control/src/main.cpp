@@ -72,6 +72,8 @@ int main(int argc, char *argv[]) {
   GMainLoop *main_loop;
   CustomData data;
 
+  auto server_thread = init_server(); 
+
   /* Initialize GStreamer */
   gst_init (&argc, &argv);
 
