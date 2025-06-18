@@ -1,3 +1,5 @@
+#include "server.h"
+
 #include <gst/gst.h> 
 #include <string.h> 
 #include <iostream> 
