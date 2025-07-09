@@ -20,22 +20,28 @@ void init_opencv(cv::Videocapture cap, cv::Mat *frame) {
 int main() {
   cv::Mat *frame; 
 
+  std::vector<uchar> buff; 
+  std::vector<int> param(2); 
+
+  param[0] = cv::IMWRITE_JPEG_QUALITY;
+  param[1] = 80;//default(95) 0-100
+
   crow::SimpleApp app; 
-  crow::SimpleApp(app, "/")([](){
+  CROW_ROUTE(app, "/")([](){
     if (frame == NULL) 
       return cv::Mat{frame->size(), frame->type(), cv::Scalar{0,0,0}}
 
-    is_success, numpy_arr = cv2.imencode(".jpg", frame)
+    bool is_success = cv::imencode(".jpg", frame, buff, param);
 
     if (!is_success) 
       return cv::Mat{frame->size(), frame->type(), cv::Scalar{0,0,0}}
 
-    return numpy_arr.to_bytes(); 
+    return buff; 
   }); 
 
   app.port(18080).multithreaded().run(); 
 
-  cv::Videocapture cap(0); 
+  cv::VideoCapture cap(0);
 
   if (!cap.isOpened()) {
     std::cout << "Error: Could not open Camera! \n"; 
