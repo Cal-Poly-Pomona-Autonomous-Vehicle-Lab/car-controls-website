@@ -1,5 +1,6 @@
 #include <iostream> 
 #include <opencv2/core.hpp> 
+#include <opencv2/opencv.hpp>
 #include "crow.h"
 
 void init_opencv(cv::Videocapture cap, cv::Mat *frame) {
@@ -29,12 +30,12 @@ int main() {
   crow::SimpleApp app; 
   CROW_ROUTE(app, "/")([](){
     if (frame == NULL) 
-      return cv::Mat{frame->size(), frame->type(), cv::Scalar{0,0,0}}
+      return cv::Mat::zeros(400, 400, CV_8UC3);
 
     bool is_success = cv::imencode(".jpg", frame, buff, param);
 
     if (!is_success) 
-      return cv::Mat{frame->size(), frame->type(), cv::Scalar{0,0,0}}
+      return cv::Mat::zeros(400, 400, CV_8UC3);
 
     return buff; 
   }); 
