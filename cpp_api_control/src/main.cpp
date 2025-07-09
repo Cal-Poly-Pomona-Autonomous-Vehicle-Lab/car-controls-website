@@ -3,11 +3,11 @@
 #include <opencv2/opencv.hpp>
 #include "crow.h"
 
-void init_opencv(cv::Videocapture cap, cv::Mat *frame) {
+void init_opencv(cv::VideoCapture &cap, cv::Mat *frame) {
   while (true) {
-    cap >> frame; 
+    cap >> *frame; 
 
-    if (frame.empty()) {
+    if (frame == NULL || frame.empty()) {
       std::cout << "Error: unable to obtain frame! \n"; 
       return; 
     }
@@ -19,28 +19,31 @@ void init_opencv(cv::Videocapture cap, cv::Mat *frame) {
 }
 
 int main() {
-  cv::Mat *frame; 
+  cv::Mat *frame = new cv::Mat();
 
-  std::vector<uchar> buff; 
+  std::vector<uchar> buff(200 * 1024 * 1024); 
   std::vector<int> param(2); 
 
   param[0] = cv::IMWRITE_JPEG_QUALITY;
   param[1] = 80;//default(95) 0-100
 
   crow::SimpleApp app; 
-  CROW_ROUTE(app, "/")([](){
+  CROW_ROUTE(app, "/")([frame, &buff, &param](){
     if (frame == NULL) 
-      return cv::Mat::zeros(400, 400, CV_8UC3);
+      return result;
 
-    bool is_success = cv::imencode(".jpg", frame, buff, param);
+    bool is_success = cv::imencode(".jpg", *frame, buff, param);
 
     if (!is_success) 
-      return cv::Mat::zeros(400, 400, CV_8UC3);
+      return result;  
+
+    for (uchar c : buff) 
+      result.push_back(c); 
 
     return buff; 
   }); 
 
-  app.port(18080).multithreaded().run(); 
+  app.port(18080).multithreaded().run_async(); 
 
   cv::VideoCapture cap(0);
 
