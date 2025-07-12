@@ -4,7 +4,7 @@
 #include "crow.h"
 
 void init_opencv(cv::VideoCapture &cap, cv::Mat *frame) {
-  while (true) {
+  while (cap.isOpened()) {
     cap >> *frame; 
 
     if (frame == NULL || frame.empty()) {
@@ -25,23 +25,32 @@ int main() {
   std::vector<int> param(2); 
 
   param[0] = cv::IMWRITE_JPEG_QUALITY;
-  param[1] = 80;//default(95) 0-100
+  param[1] = 80
 
   crow::SimpleApp app; 
-  CROW_ROUTE(app, "/")([frame, &buff, &param](){
-    if (frame == NULL) 
-      return result;
 
-    bool is_success = cv::imencode(".jpg", *frame, buff, param);
+  CROW_WEBSOCKET_ROUTE(app, "/ws")
+    .on_open([&](crow::websocket::connection& conn) {
+    })
+    .on_close([&](crow::websocket::connection& conn, const std::string& reason
+    uint16_t status_code) {
+      cap.release(); 
+    })
+    .on_message([&](crow::websocket::connection& conn, const std::string& message,
+    bool is_binary) {
+      if (frame == NULL)
+        return; 
 
-    if (!is_success) 
-      return result;  
+      bool is_sucess = cv::imencode(".jpg", *frame, buff, param); 
+      
+      if (!is_success)
+        return result; 
 
-    for (uchar c : buff) 
-      result.push_back(c); 
-
-    return buff; 
-  }); 
+        for (uchar c: buff)
+          result.push_back(c); 
+      
+      return buff;
+    })
 
   app.port(18080).multithreaded().run_async(); 
 
