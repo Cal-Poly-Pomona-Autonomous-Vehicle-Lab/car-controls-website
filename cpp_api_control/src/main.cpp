@@ -40,20 +40,20 @@ int main() {
       std::string result = "Error";
 
       if (frame == NULL)
-        return result; 
+        conn.send_text(result);
       else if (frame->empty())
-        return result; 
+        conn.send_text(result);
 
       bool is_success = cv::imencode(".jpg", *frame, buff, param); 
       
       if (!is_success)
-        return result; 
+        conn.send_text(result); 
 
       result.clear(); 
       for (uchar c: buff)
         result.push_back(c); 
       
-      return result;
+      conn.send_text(result);
     })
 
   app.port(18080).multithreaded().run_async(); 
