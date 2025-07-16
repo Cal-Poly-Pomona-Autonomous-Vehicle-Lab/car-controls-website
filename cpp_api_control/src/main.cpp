@@ -2,7 +2,7 @@
 #include <opencv2/core.hpp> 
 #include <opencv2/opencv.hpp>
 #include <thread> 
-#include <signal> 
+#include <csignal> 
 #include "crow.h"
 
 void signal_handler(int signum) {
