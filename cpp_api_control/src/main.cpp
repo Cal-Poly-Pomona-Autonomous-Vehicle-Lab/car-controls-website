@@ -27,6 +27,8 @@ void init_opencv(cv::Mat *frame) {
       break; 
     }
   }
+
+  std::cout << "Thread is finished\n"; 
 }
 
 int main() {
@@ -41,6 +43,7 @@ int main() {
   crow::SimpleApp app; 
 
   CROW_WEBSOCKET_ROUTE(app, "/ws")
+    .max_payload(200 * 1024 * 1024);
     .onopen([&](crow::websocket::connection& conn) {
     })
     .onclose([&](crow::websocket::connection& conn, const std::string& reason,
@@ -69,13 +72,14 @@ int main() {
       for (uchar c: buff)
         result.push_back(c); 
       
-      conn.send_text(result);
+      conn.send_binary(result);
     });
 
   auto server = app.port(18080).multithreaded().run_async(); 
 
   std::cout << "Server finished init\n"; 
 
+  std::cout << "Thread is starting\n";
   std::thread worker(init_opencv, std::ref(frame)); 
   worker.detach(); 
 
