@@ -1,6 +1,7 @@
 #include <iostream> 
 #include <opencv2/core.hpp> 
 #include <opencv2/opencv.hpp>
+#include <thread> 
 #include "crow.h"
 
 void init_opencv(cv::VideoCapture &cap, cv::Mat *frame) {
@@ -59,10 +60,10 @@ int main() {
       conn.send_text(result);
     })
 
-  app.port(18080).multithreaded().run_async(); 
+  auto server = app.port(18080).multithreaded().run_async(); 
 
   std::cout << "Server finished init\n"; 
-  
+
   cv::VideoCapture cap(0);
 
   if (!cap.isOpened()) {
@@ -70,7 +71,7 @@ int main() {
     return -1; 
   }
 
-  init_opencv(cap, frame); ; 
+  opencv_init(cap, frame);
 
   return 0; 
 }
