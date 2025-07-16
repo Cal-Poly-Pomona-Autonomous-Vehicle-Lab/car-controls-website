@@ -2,9 +2,17 @@
 #include <opencv2/core.hpp> 
 #include <opencv2/opencv.hpp>
 #include <thread> 
+#include <signal> 
 #include "crow.h"
 
+void signal_handler(int signum) {
+  std::cout << "Caught signal " << signum << ". Exiting gracefully. \n"; 
+  exit(signum)
+}
+
 void init_opencv(cv::VideoCapture &cap, cv::Mat *frame) {
+  signal(SIGNIT, signal_handler); 
+
   while (cap.isOpened()) {
     cap >> *frame; 
 
@@ -73,7 +81,8 @@ int main() {
     return -1; 
   }
 
-  init_opencv(cap, frame);
+  std::thread worker(init_opencv, cap, frame); 
+  worker.detach(); 
 
   return 0; 
 }
