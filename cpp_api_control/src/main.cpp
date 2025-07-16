@@ -58,7 +58,7 @@ int main() {
         result.push_back(c); 
       
       conn.send_text(result);
-    })
+    });
 
   auto server = app.port(18080).multithreaded().run_async(); 
 
