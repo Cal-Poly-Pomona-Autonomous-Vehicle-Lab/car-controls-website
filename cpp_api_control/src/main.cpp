@@ -10,7 +10,9 @@ void signal_handler(int signum) {
   exit(signum);
 }
 
-void init_opencv(cv::VideoCapture &cap, cv::Mat *frame) {
+void init_opencv(cv::Mat *frame) {
+  cv::VideoCapture cap(0); 
+
   signal(SIGINT, signal_handler); 
 
   while (cap.isOpened()) {
@@ -74,14 +76,7 @@ int main() {
 
   std::cout << "Server finished init\n"; 
 
-  cv::VideoCapture cap(0);
-
-  if (!cap.isOpened()) {
-    std::cout << "Error: Could not open Camera! \n"; 
-    return -1; 
-  }
-
-  std::thread worker(init_opencv, std::ref(cap), std::ref(frame)); 
+  std::thread worker(init_opencv, std::ref(frame)); 
   worker.detach(); 
 
   return 0; 
