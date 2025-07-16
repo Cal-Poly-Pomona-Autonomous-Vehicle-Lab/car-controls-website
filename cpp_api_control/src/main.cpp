@@ -40,12 +40,13 @@ int main() {
     bool is_binary) {
       std::string result = "error";
 
-      if (frame == NULL)
+      if (frame == NULL) {
         conn.send_text(result);
         return; 
-      else if (frame->empty())
+      } else if (frame->empty()) {
         conn.send_text(result);
         return; 
+      }
 
       bool is_success = cv::imencode(".jpg", *frame, buff, param); 
       
