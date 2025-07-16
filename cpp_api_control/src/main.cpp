@@ -37,17 +37,20 @@ int main() {
     })
     .onmessage([&](crow::websocket::connection& conn, const std::string& message,
     bool is_binary) {
-      std::string result = "Error";
+      std::string result = "error";
 
       if (frame == NULL)
         conn.send_text(result);
+        return; 
       else if (frame->empty())
         conn.send_text(result);
+        return; 
 
       bool is_success = cv::imencode(".jpg", *frame, buff, param); 
       
       if (!is_success)
         conn.send_text(result); 
+        return; 
 
       result.clear(); 
       for (uchar c: buff)
