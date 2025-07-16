@@ -7,11 +7,11 @@
 
 void signal_handler(int signum) {
   std::cout << "Caught signal " << signum << ". Exiting gracefully. \n"; 
-  exit(signum)
+  exit(signum);
 }
 
 void init_opencv(cv::VideoCapture &cap, cv::Mat *frame) {
-  signal(SIGNIT, signal_handler); 
+  signal(SIGINT, signal_handler); 
 
   while (cap.isOpened()) {
     cap >> *frame; 
