@@ -61,6 +61,8 @@ int main() {
 
   app.port(18080).multithreaded().run_async(); 
 
+  std::cout << "Server finished init\n"; 
+  
   cv::VideoCapture cap(0);
 
   if (!cap.isOpened()) {
