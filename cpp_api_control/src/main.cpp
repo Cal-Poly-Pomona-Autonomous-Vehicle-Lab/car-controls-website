@@ -46,20 +46,20 @@ int main() {
     })
     .onmessage([&](crow::websocket::connection& conn, const std::string& message,
     bool is_binary) {
-      std::string result = "error";
+      std::string result;
 
       if (frame == NULL) {
-        conn.send_text(result);
+        conn.send_text("NULL Frame");
         return; 
       } else if (frame->empty()) {
-        conn.send_text(result);
+        conn.send_text("Empty Frame");
         return; 
       }
 
       bool is_success = cv::imencode(".jpg", *frame, buff, param); 
       
       if (!is_success) {
-        conn.send_text(result); 
+        conn.send_text("Failed to encode to jpg"); 
         return; 
       }
 
