@@ -50,9 +50,10 @@ int main() {
 
       bool is_success = cv::imencode(".jpg", *frame, buff, param); 
       
-      if (!is_success)
+      if (!is_success) {
         conn.send_text(result); 
         return; 
+      }
 
       result.clear(); 
       for (uchar c: buff)
