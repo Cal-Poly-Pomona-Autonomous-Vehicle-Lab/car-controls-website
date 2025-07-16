@@ -81,7 +81,7 @@ int main() {
     return -1; 
   }
 
-  std::thread worker(init_opencv, cap, frame); 
+  std::thread worker(init_opencv, std::ref(cap), std::ref(frame)); 
   worker.detach(); 
 
   return 0; 
