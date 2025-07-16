@@ -72,7 +72,7 @@ int main() {
     return -1; 
   }
 
-  opencv_init(cap, frame);
+  init_opencv(cap, frame);
 
   return 0; 
 }
