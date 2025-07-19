@@ -15,8 +15,11 @@ void init_opencv(cv::Mat *frame) {
 
   signal(SIGINT, signal_handler); 
 
-  while (cap.isOpened()) {
-    cap >> *frame; 
+  while (true) {
+    if (cap.isOpened())
+      cap >> *frame; 
+    else
+      *frame = cv::Mat(320, 240, CV_8UC3, cv::Scalar(0, 0, 0));
 
     if ( frame == NULL || frame->empty() ) {
       std::cout << "Error: unable to obtain frame! \n"; 
