@@ -45,7 +45,7 @@ int main() {
 
   crow::SimpleApp app; 
 
-  CROW_WEBSOCKET_ROUTE(app, "/ws")
+  CROW_WEBSOCKET_ROUTE(app, "/")
     .max_payload(200 * 1024 * 1024)
     .onopen([&](crow::websocket::connection& conn) {
     })
