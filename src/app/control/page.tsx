@@ -18,8 +18,9 @@ export default function carControls() {
     const [isForward, setForward] = useState(false);
     const [isBackward, setBackward] = useState(false);
     const [isStream, setStream] = useState(false);
+    const [isFrame, setFrame] = useState(null);
 
-    socket.current = io("http://10.110.194.54:5002", {
+    socket.current = io("http://:18080/", {
         timeout: 5000, 
         transports: ["websocket"], 
     });
@@ -40,6 +41,10 @@ export default function carControls() {
         socket.current.on("disconnect", () => {
             console.log("Disconected");
         });
+
+        socket.current.on("message", (m) => {
+            setFrame(m);
+        })
 
         socket.current.on("connect_error", (err) => {
             console.log(err.message);
@@ -73,7 +78,7 @@ export default function carControls() {
 
     const isStreamLive = async() => {
         try {
-            const req = await fetch("http://10.110.194.54:5002/camera/stream");
+            const req = await fetch("http://:5002/camera/stream");
             if (!req.ok) {
                 return;
             }
@@ -99,7 +104,7 @@ export default function carControls() {
             <div className="allStreamControls" onKeyDown={sendKeyPressToRos} tabIndex={0}> 
                 <div className="videoStream" tabIndex={0}> 
                     <div className="backgroundColor" /> 
-                    <img className="videoFrame" src={isStream ? "http://10.110.194.54:5002/camera/stream": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII="} /> 
+                    <img className="videoFrame" src={isFrame ? isFrame: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII="} /> 
                 </div>
                 <div className="controls" tabIndex={0}>
                     <ChevronCompactDown size={20}></ChevronCompactDown>
