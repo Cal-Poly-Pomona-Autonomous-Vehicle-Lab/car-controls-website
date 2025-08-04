@@ -3,27 +3,23 @@ import { useEffect, useRef, useState } from "react";
 import Link from 'next/link'
 import { redirect } from 'next/navigation';
 import { ChevronCompactDown, ChevronCompactLeft, ChevronCompactRight, ChevronBarUp } from 'react-bootstrap-icons';
-import {io, Socket} from 'socket.io-client';
 import "./controlPage.css";
 import { useFormState } from 'react-dom';
 import { read } from "fs";
 
 export default function carControls() {
-    let socket = useRef<Socket | null> (null); 
+    let socket = useRef<WebSocket | null> (null); 
+    const black_image = "data:image/jpeg;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
+
     const [isData, setData] = useState(null);
-
-
     const [isLeft, setLeft] = useState(false);
     const [isRight, setRight] = useState(false);
     const [isForward, setForward] = useState(false);
     const [isBackward, setBackward] = useState(false);
     const [isStream, setStream] = useState(false);
-    const [isFrame, setFrame] = useState(null);
+    const [isFrame, setFrame] = useState(black_image);
 
-    socket.current = io("http://:18080/", {
-        timeout: 5000, 
-        transports: ["websocket"], 
-    });
+    socket.current = new WebSocket("http://:18080/");
 
     useEffect(() => {
        isStreamLive(); 
@@ -34,22 +30,26 @@ export default function carControls() {
             return; 
         }
 
-        socket.current.on('connect', () => {
-            console.log("Conneted");
-        })
+        socket.current.onopen = (e) => {
+            console.log("Opening"); 
+        }
 
-        socket.current.on("disconnect", () => {
-            console.log("Disconected");
-        });
+        socket.current.onclose = (e) => {
+            console.log("Closing"); 
+        }
 
-        socket.current.on("message", (m) => {
-            setFrame(m);
-        })
+        socket.current.onmessage = (mes) => {
+            if (typeof mes != 'string')
+                return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII="
+            
+            const base64_img = btoa(mes);  
+            return base64_img;  
+        }
 
-        socket.current.on("connect_error", (err) => {
-            console.log(err.message);
-        
-         })
+        socket.current.onerror = (err) => {
+            console.log("Error: " + err); 
+        }
+
     }, [])
 
     const sendKeyPressToRos = async(event: any) => {
@@ -58,21 +58,17 @@ export default function carControls() {
         }
 
         if (event.key === "w"){
-            socket.current.emit('keypress', {key: event.key, action: "press"}, () => {
-                console.log("sent");
-            });
+            socket.current.send(`\{key: ${event.key}, action: \"press\"`);  
+            console.log("sent forward command"); 
        } else if (event.key === "s") {
-            socket.current.emit('keypress', {key: event.key, action: "press"}, () => {
-                console.log("sent");
-            });
+            socket.current.send(`\{key: ${event.key}, action: \"press\"`);  
+            console.log("sent back command"); 
        } else if (event.key === "a") {
-            socket.current.emit('keypress', {key: event.key, action: "press"}, () => {
-                console.log("sent");
-            });
+            socket.current.send(`\{key: ${event.key}, action: \"press\"`);  
+            console.log("sent left command"); 
        } else if (event.key === "d"){
-            socket.current.emit('keypress', {key: event.key, action: "press"}, () => {
-                console.log("sent");
-            });
+            socket.current.send(`\{key: ${event.key}, action: \"press\"`);  
+            console.log("sent right command"); 
        }
     }
 
@@ -104,7 +100,7 @@ export default function carControls() {
             <div className="allStreamControls" onKeyDown={sendKeyPressToRos} tabIndex={0}> 
                 <div className="videoStream" tabIndex={0}> 
                     <div className="backgroundColor" /> 
-                    <img className="videoFrame" src={isFrame ? isFrame: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII="} /> 
+                    <img className="videoFrame" src={isFrame} /> 
                 </div>
                 <div className="controls" tabIndex={0}>
                     <ChevronCompactDown size={20}></ChevronCompactDown>
