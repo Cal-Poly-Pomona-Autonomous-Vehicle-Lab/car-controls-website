@@ -53,7 +53,7 @@ int main() {
     .onclose([&](crow::websocket::connection& conn, const std::string& reason,
     uint16_t status_code) {
     })
-    .onaccept([&][const crow::request& req, void **userdata]{
+    .onaccept([&](const crow::request& req, void **userdata){
       return true 
     }) 
     .onmessage([&](crow::websocket::connection& conn, const std::string& message,
