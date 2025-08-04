@@ -54,7 +54,7 @@ int main() {
     uint16_t status_code) {
     })
     .onaccept([&](const crow::request& req, void **userdata){
-      return true 
+      return true;
     }) 
     .onmessage([&](crow::websocket::connection& conn, const std::string& message,
     bool is_binary) {
@@ -76,9 +76,8 @@ int main() {
       }
 
       result.clear(); 
-      result = buff; 
-      // for (uchar c: buff)
-      //   result.push_back(c); 
+      for (uchar c: buff)
+        result.push_back(c); 
       conn.send_binary(result);
     });
 
