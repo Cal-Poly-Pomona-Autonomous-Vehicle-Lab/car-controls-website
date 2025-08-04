@@ -52,32 +52,33 @@ int main() {
     .onclose([&](crow::websocket::connection& conn, const std::string& reason,
     uint16_t status_code) {
     })
+    .onaceept([&][const crow::request& req, void **userdata]{
+      return true 
+    }) 
     .onmessage([&](crow::websocket::connection& conn, const std::string& message,
     bool is_binary) {
       std::string result;
 
-      while (true) {
-        if (frame == NULL) {
-          conn.send_text("NULL Frame");
-          return; 
-        } else if (frame->empty()) {
-          conn.send_text("Empty Frame");
-          return; 
-        }
+      if (frame == NULL) {
+        conn.send_text("NULL Frame");
+        return; 
+      } else if (frame->empty()) {
+        conn.send_text("Empty Frame");
+        return; 
+      }
 
-        bool is_success = cv::imencode(".jpg", *frame, buff, param); 
+      bool is_success = cv::imencode(".jpg", *frame, buff, param); 
       
-        if (!is_success) {
-          conn.send_text("Failed to encode to jpg"); 
-          return; 
-        }
+      if (!is_success) {
+        conn.send_text("Failed to encode to jpg"); 
+        return; 
+      }
 
-        result.clear(); 
-        for (uchar c: buff)
-          result.push_back(c); 
-      
-        conn.send_binary(result);
-      } 
+      result.clear(); 
+      result = buff; 
+      // for (uchar c: buff)
+      //   result.push_back(c); 
+      conn.send_binary(result);
     });
 
   auto server = app.port(18080).multithreaded().run_async(); 
