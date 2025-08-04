@@ -40,7 +40,7 @@ export default function carControls() {
 
         socket.current.onmessage = (mes) => {
             if (typeof mes != 'string')
-                return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII="
+                return black_image; 
             
             const base64_img = btoa(mes);  
             return base64_img;  

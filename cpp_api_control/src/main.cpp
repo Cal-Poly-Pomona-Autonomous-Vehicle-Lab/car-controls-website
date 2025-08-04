@@ -39,6 +39,7 @@ int main() {
 
   std::vector<uchar> buff(200 * 1024 * 1024); 
   std::vector<int> param(2); 
+  /* TODO: Implement a queue to manage the frames */
 
   param[0] = cv::IMWRITE_JPEG_QUALITY;
   param[1] = 80;
@@ -52,7 +53,7 @@ int main() {
     .onclose([&](crow::websocket::connection& conn, const std::string& reason,
     uint16_t status_code) {
     })
-    .onaceept([&][const crow::request& req, void **userdata]{
+    .onaccept([&][const crow::request& req, void **userdata]{
       return true 
     }) 
     .onmessage([&](crow::websocket::connection& conn, const std::string& message,
