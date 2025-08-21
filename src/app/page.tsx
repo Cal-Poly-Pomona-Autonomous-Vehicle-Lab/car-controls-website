@@ -16,13 +16,16 @@ export default function Home() {
   const [isLoadingInital, setLoadingInital] = useState(true);
   const [isLoading, setLoading] = useState(false);
 
+  const ipv4 = process.env.LOCALHOST;
+  console.log("IP:" + process.env.LOCALHOST);
+
   useEffect(() => {
     initalChecks();
   }, []);
 
   const initalChecks = async() => {
     try {
-      const req = await fetch("http://10.110.194.54:5000/heartbeat", {
+      const req = await fetch(`http://${ipv4}:5000/heartbeat`, {
         signal: AbortSignal.timeout(5000)
       }); 
 
@@ -44,7 +47,7 @@ export default function Home() {
   const checkCarHeartBeat = async () => {
     setLoading(true);
     try {
-      const req = await fetch("http://10.110.194.54:5000/heartbeat", {
+      const req = await fetch(`http://${ipv4}:5000/heartbeat`, {
         signal: AbortSignal.timeout(5000)
       }); 
 

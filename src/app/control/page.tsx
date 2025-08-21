@@ -9,7 +9,9 @@ import { read } from "fs";
 
 export default function carControls() {
     let socket = useRef<WebSocket | null> (null); 
-    const black_image = "data:image/jpeg;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
+    const black_image = `data:image/jpeg;base64,
+        iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=`;
+    const reader = new FileReader(); 
 
     const [isData, setData] = useState(null);
     const [isLeft, setLeft] = useState(false);
@@ -19,7 +21,9 @@ export default function carControls() {
     const [isStream, setStream] = useState(false);
     const [isFrame, setFrame] = useState(black_image);
 
-    socket.current = new WebSocket("http://:18080/");
+    const ipv4 = (typeof process.env.LOCALHOST === 'undefined') ? "0.0.0.0" : process.env.LOCALHOST;  
+
+    socket.current = new WebSocket(`ws://${ipv4}:5002`);
 
     useEffect(() => {
        isStreamLive(); 
@@ -38,13 +42,23 @@ export default function carControls() {
             console.log("Closing"); 
         }
 
-        socket.current.onmessage = (mes) => {
-            if (typeof mes != 'string')
-                return black_image; 
-            
-            const base64_img = btoa(mes);  
-            return base64_img;  
+        socket.current.onmessage = (e) => {
+            const binary_img = e.data; 
+            if (binary_img.size === 0) {
+                console.log("Empty Data"); 
+                return;  
+            } 
+
+            reader.onloadend = () => {
+                if (reader.result == null || reader.result instanceof ArrayBuffer) {
+                    console.log("Failed to obtain image"); 
+                    return; 
+                } 
+                setFrame(reader.result);
+            }
+            reader.readAsDataURL(binary_img); 
         }
+
 
         socket.current.onerror = (err) => {
             console.log("Error: " + err); 
@@ -73,8 +87,8 @@ export default function carControls() {
     }
 
     const isStreamLive = async() => {
-        try {
-            const req = await fetch("http://:5002/camera/stream");
+        /* try {
+            const req = await fetch(`http://${ipv4}:5002/camera/stream`);
             if (!req.ok) {
                 return;
             }
@@ -91,8 +105,7 @@ export default function carControls() {
             console.log(error);
         } finally {
             setStream(false);
-        }
-
+        } */ 
     }
 
     return (
