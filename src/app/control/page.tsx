@@ -11,7 +11,6 @@ export default function carControls() {
     let socket = useRef<WebSocket | null> (null); 
     const black_image = `data:image/jpeg;base64,
         iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=`;
-    const reader = new FileReader(); 
 
     const [isData, setData] = useState(null);
     const [isLeft, setLeft] = useState(false);
@@ -23,13 +22,17 @@ export default function carControls() {
 
     const ipv4 = (typeof process.env.LOCALHOST === 'undefined') ? "0.0.0.0" : process.env.LOCALHOST;  
 
-    socket.current = new WebSocket(`ws://${ipv4}:5002`);
 
     useEffect(() => {
        isStreamLive(); 
     }, [isStream]);
 
     useEffect(() => {
+        socket.current = new WebSocket(`ws://${ipv4}:5002/`);
+
+        const reader = new FileReader(); 
+        console.log("Initializing Websockets");
+
         if (socket.current === null) {
             return; 
         }
@@ -38,11 +41,20 @@ export default function carControls() {
             console.log("Opening"); 
         }
 
+
         socket.current.onclose = (e) => {
             console.log("Closing"); 
+
+            e.stopImmediatePropagation(); 
+            socket.current?.close(); 
         }
 
-        socket.current.onmessage = (e) => {
+        socket.current.onmessage = async(e) => {
+            console.log("Recieved Message");
+            console.log(e);
+
+            console.log(socket.current?.OPEN);
+
             const binary_img = e.data; 
             if (binary_img.size === 0) {
                 console.log("Empty Data"); 
@@ -54,6 +66,9 @@ export default function carControls() {
                     console.log("Failed to obtain image"); 
                     return; 
                 } 
+
+                console.log("inserting photo");
+
                 setFrame(reader.result);
             }
             reader.readAsDataURL(binary_img); 
@@ -61,15 +76,33 @@ export default function carControls() {
 
 
         socket.current.onerror = (err) => {
-            console.log("Error: " + err); 
+            if (socket.current == null)
+                return; 
+
+            err.stopImmediatePropagation(); 
+            console.log("Error: " + err.type);
+
+            socket.current.close(); 
         }
 
+        return () => {
+            if (!socket.current) 
+                return
+            if (socket.current?.readyState !== 3) {
+                socket.current?.close(); 
+            }
+        }
     }, [])
 
     const sendKeyPressToRos = async(event: any) => {
         if (socket.current === null) {
             return 
-        }
+        } 
+
+        // if (socket.current.CONNECTING === 0) {
+        //     console.log("Connecting..."); 
+        //     return; 
+        // } 
 
         if (event.key === "w"){
             socket.current.send(`\{key: ${event.key}, action: \"press\"`);  
