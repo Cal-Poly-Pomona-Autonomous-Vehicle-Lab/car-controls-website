@@ -69,7 +69,7 @@ void init_opencv_onopen(cv::Mat *frame, cv::VideoCapture cap,
       break; 
     }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 
   CROW_LOG_INFO << "Thread has completed\n"; 
