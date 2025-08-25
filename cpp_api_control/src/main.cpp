@@ -1,6 +1,7 @@
 #include <iostream> 
 #include <opencv2/core.hpp> 
 #include <opencv2/opencv.hpp>
+ #include <nlohmann/json.hpp>
 #include <thread> 
 #include <csignal> 
 #include <mutex>
@@ -78,6 +79,9 @@ void send_frames(crow::websocket::connection& conn,
     std::this_thread::sleep_for(std::chrono::milliseconds(100)); 
   }
 
+  mutex.lock(); 
+  frames_queue = {};
+  mutex.unlock();  
 }
 
 int main() {
@@ -90,6 +94,10 @@ int main() {
   CROW_LOG_INFO  << "Server is Starting...\n"; 
 
   crow::SimpleApp app; 
+
+  CROW_ROUTE(app, "/isAlive") ([](){
+    return "{ is_alive: true }";
+  }); 
 
   CROW_WEBSOCKET_ROUTE(app, "/")
     .onopen([&](crow::websocket::connection& conn) {
@@ -115,6 +123,7 @@ int main() {
       isLive = false; 
     })
     .onaccept([&](const crow::request& req, void **userdata) {
+      /* TODO: Write some protections to eliminate foreigns connections */
       return true;
     }) 
     .onerror([&](const crow::websocket::connection& conn, const std::string& error_message){
@@ -123,12 +132,13 @@ int main() {
     })
     .onmessage([&](crow::websocket::connection& conn, const std::string& message,
     bool is_binary) {
+      if (message == "ping")
+        return "pong"; 
     });
 
-  std::cout << "Server is starting\n"; 
+  CROW_LOG_INFO << "Server is starting\n"; 
   auto server = app.port(5002).run_async(); 
-
-  std::cout << "Server finished init\n"; 
+  CROW_LOG_INFO << "Server finished init\n"; 
 
   return 0; 
 }
