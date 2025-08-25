@@ -3,6 +3,8 @@
 #include <opencv2/opencv.hpp>
 #include <thread> 
 #include <csignal> 
+#include <mutex>
+#include <queue>
 #include "crow.h"
 
 void signal_handler(int signum) {
@@ -10,86 +12,82 @@ void signal_handler(int signum) {
   exit(signum);
 }
 
-void init_opencv(cv::Mat *frame, cv::VideoCapture cap) {
+void manage_camera(cv::VideoCapture cap, 
+  std::queue<std::string> &frames, std::mutex &mutex, bool &isLive) {
 
   signal(SIGINT, signal_handler); 
-
-  while (true) {
-    if (cap.isOpened())
-      cap >> *frame; 
-    else
-      *frame = cv::Mat(320, 240, CV_8UC3, cv::Scalar(0, 0, 0));
-
-    if ( frame == NULL || frame->empty() ) {
-      std::cout << "Error: unable to obtain frame! \n"; 
-      return; 
-    }
-    
-    if ( cv::waitKey(1) == 27 ) {
-      break; 
-    }
-  }
-
-  std::cout << "Thread is finished\n"; 
-}
-
-void init_opencv_onopen(cv::Mat *frame, cv::VideoCapture cap, 
-  crow::websocket::connection& conn, bool isLive) {
-  signal(SIGINT, signal_handler); 
-
   std::vector<uchar> buff(200 * 1024 * 1024); 
   std::vector<int> param(2); 
 
-  while (cap.isOpened() && isLive) {
-    cap >> *frame; 
+  param[0] = cv::IMWRITE_JPEG_QUALITY;
+  param[1] = 80;
 
-    if ( frame == NULL ) {
+  cv::Mat frame; 
+
+  while ( cap.isOpened() && isLive ) {
+    cap >> frame; 
+
+    if ( frame.empty() ) {
       CROW_LOG_INFO << "Error: Unable to obtain frame \n"; 
       return; 
     } 
-
-    if ( frame->empty() ) {
-      CROW_LOG_INFO << "Frame Empty, sending empty image"; 
-      break; 
-    }
     
-    bool is_success = cv::imencode(".jpg", *frame, buff, param); 
+    bool is_success = cv::imencode(".jpg", frame, buff, param); 
     if (!is_success) {
-      conn.send_text("Failed to encode to jpg"); 
+      CROW_LOG_INFO << "Failed to encode image";
       return; 
     }
     
     std::string result(buff.begin(), buff.end());
 
-    CROW_LOG_INFO << "Sending frame...";
-    
+    /* If frame queue is full, continue updating the queue with latest frames */
+    mutex.lock();
+    if (frames.size() >= 10) {
+      frames.pop(); 
+      frames.push( result );   
+      CROW_LOG_INFO << "Waiting for update..."; 
+    } else {
+      frames.push( result ); 
+      CROW_LOG_INFO << "Pushing Frame Into Queue"; 
+    }
+    mutex.unlock(); 
 
-    conn.send_binary(result);
+    
     if ( cv::waitKey(1) == 27 ) {
       break; 
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
+}
 
-  CROW_LOG_INFO << "Thread has completed\n"; 
+void send_frames(crow::websocket::connection& conn, 
+  std::queue<std::string> &frames_queue, std::mutex& mutex, bool& isLive) {
+  
+  signal(SIGINT, signal_handler); 
+  while (isLive) {
+    if (frames_queue.empty()) continue; 
+
+    mutex.lock(); 
+    conn.send_binary(frames_queue.front()); 
+    frames_queue.pop(); 
+    mutex.unlock(); 
+
+    CROW_LOG_INFO << "Sending image..."; 
+    
+    std::this_thread::sleep_for(std::chrono::milliseconds(100)); 
+  }
+
 }
 
 int main() {
   cv::Mat *frame = new cv::Mat();
   cv::VideoCapture cap(0);
+  std::queue<std::string> frames_queue; 
+  std::mutex mutex; 
   bool isLive = false; 
 
-  std::vector<uchar> buff(200 * 1024 * 1024); 
-  std::vector<int> param(2); 
-  /* TODO: Implement a queue to manage the frames */
-
-  param[0] = cv::IMWRITE_JPEG_QUALITY;
-  param[1] = 80;
-
-  std::cout << "Starting\n"; 
-
-  // TODO: Adding queue to live streaming
+  CROW_LOG_INFO  << "Server is Starting...\n"; 
 
   crow::SimpleApp app; 
 
@@ -103,14 +101,17 @@ int main() {
       }
         
       isLive = true; 
-      std::thread livestream_thread(init_opencv_onopen, frame, cap, std::ref(conn), isLive); 
-      livestream_thread.detach(); 
+      std::thread camera_thread(manage_camera, cap, 
+        std::ref(frames_queue), std::ref(mutex), std::ref(isLive)); 
+      camera_thread.detach(); 
+
+      std::thread queue_thread(send_frames, std::ref(conn), 
+        std::ref(frames_queue), std::ref(mutex), std::ref(isLive));
+      queue_thread.detach(); 
     })
     .onclose([&](crow::websocket::connection& conn, const std::string& reason,
     uint16_t status_code) {
       CROW_LOG_INFO << "Closing socket"; 
-
-      // TODO: Fix the segmentation fault
       isLive = false; 
     })
     .onaccept([&](const crow::request& req, void **userdata) {
@@ -128,7 +129,6 @@ int main() {
   auto server = app.port(5002).run_async(); 
 
   std::cout << "Server finished init\n"; 
-
 
   return 0; 
 }
