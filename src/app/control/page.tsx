@@ -1,11 +1,14 @@
 'use client'
-import { useEffect, useRef, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import Link from 'next/link'
 import { redirect } from 'next/navigation';
+import { Image, CardText, Card, Stack, Button} from 'react-bootstrap'; 
+import { Container, Col, Row } from 'react-bootstrap';
 import { ChevronCompactDown, ChevronCompactLeft, ChevronCompactRight, ChevronBarUp } from 'react-bootstrap-icons';
 import "./controlPage.css";
 import { useFormState } from 'react-dom';
 import { read } from "fs";
+
 
 export default function carControls() {
     let socket = useRef<WebSocket | null> (null); 
@@ -17,8 +20,11 @@ export default function carControls() {
     const [isRight, setRight] = useState(false);
     const [isForward, setForward] = useState(false);
     const [isBackward, setBackward] = useState(false);
+    const [isAlive, setAlive] = useState(false);
     const [isStream, setStream] = useState(false);
     const [isFrame, setFrame] = useState(black_image);
+    const [isMPH, setMPH] = useState(0.0);
+    const [steeringAngle, setSteeringAngle] = useState(0.0);
 
     const ipv4 = (typeof process.env.LOCALHOST === 'undefined') ? "0.0.0.0" : process.env.LOCALHOST;  
 
@@ -29,6 +35,7 @@ export default function carControls() {
 
     useEffect(() => {
         socket.current = new WebSocket(`ws://${ipv4}:5002/`);
+
 
         const reader = new FileReader(); 
         console.log("Initializing Websockets");
@@ -41,9 +48,10 @@ export default function carControls() {
             console.log("Opening"); 
         }
 
-
         socket.current.onclose = (e) => {
             console.log("Closing"); 
+
+            setFrame(black_image);
 
             e.stopImmediatePropagation(); 
             socket.current?.close(); 
@@ -81,6 +89,8 @@ export default function carControls() {
 
             err.stopImmediatePropagation(); 
             console.log("Error: " + err.type);
+
+            setFrame(black_image); 
 
             socket.current.close(); 
         }
@@ -120,8 +130,8 @@ export default function carControls() {
     }
 
     const isStreamLive = async() => {
-        /* try {
-            const req = await fetch(`http://${ipv4}:5002/camera/stream`);
+        try {
+            const req = await fetch(`http://${ipv4}:5002/isLive`);
             if (!req.ok) {
                 return;
             }
@@ -138,20 +148,48 @@ export default function carControls() {
             console.log(error);
         } finally {
             setStream(false);
-        } */ 
+        } 
     }
 
     return (
         <>
-            <div className="allStreamControls" onKeyDown={sendKeyPressToRos} tabIndex={0}> 
-                <div className="videoStream" tabIndex={0}> 
-                    <div className="backgroundColor" /> 
-                    <img className="videoFrame" src={isFrame} /> 
-                </div>
-                <div className="controls" tabIndex={0}>
-                    <ChevronCompactDown size={20}></ChevronCompactDown>
-                </div>
-            </div>
+            <Container fluid="lg"> 
+                <Row className="justify-content-md-center"> 
+                    <Col md="auto">
+                        <div className="allStreamControls" onKeyDown={sendKeyPressToRos} > 
+                            <div className="videoStream"> 
+                                <div className="backgroundColor" /> 
+                                <img className="videoFrame" src={isFrame} /> 
+                            </div>
+                        </div> 
+                    </Col>
+                    <Col md="auto" className="carAuto">
+                        <div className="d-flex align-items-center gap-1 mb-3">
+                            <Image className="mt-2 mx-1" src="../online-green.png" 
+                                roundedCircle 
+                                alt="me"
+                                width="6px"
+                                height="7px"/>
+                            <CardText> Online </CardText>
+                        </div>
+                        <div className="gap-1">
+                            <span> {isMPH} MPH</span>
+                        </div>
+                        <div className="gap-1">
+                            <span> {steeringAngle}  ° Radians </span>
+                        </div>
+                    </Col>
+                    <Col xs lg="2" className="justify-content-end p-2">
+                        <Button variant="primary" className="rounded-circle p-0" size="sm" style={{
+                            height: "6%", 
+                            width: "15%", 
+                            borderRadius: "50%"
+                            }}>
+                            <Image roundedCircle src="../power-switch.png" width="100%" height="100%"></Image>
+                        </Button>
+                    </Col>
+                </Row> 
+            </Container>
         </>
     );
 }

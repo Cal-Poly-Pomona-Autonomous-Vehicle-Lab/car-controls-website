@@ -1,19 +1,19 @@
 .videoStream {
-    display: flex;
-    align-items: center;
-    justify-self: center;
+    display: flex; 
+    width: auto; 
+    /* align-items: center; */
+    /* justify-self: center; */
 }
 
 .videoFrame {
     max-width: 640px;
     max-height: 480px;
-    position: absolute;
+    /* position: absolute; */
 }
 
 .controls {
     display: flex;
-    align-items: bottom;
-    justify-self: bottom;
+    align-items: bottom; 
 }
 
 .backgroundColor {
